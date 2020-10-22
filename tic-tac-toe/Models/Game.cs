@@ -13,5 +13,6 @@ namespace tic_tac_toe
         public string CurrentPlayer { get; set; }
         public string XConnectionId { get; set; }
         public string OConnectionId { get; set; }
+        public string Tags { get; set; } 
     }
 }

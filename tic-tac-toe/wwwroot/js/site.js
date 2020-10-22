@@ -1,40 +1,16 @@
 ﻿const tagContainer = document.querySelector('.tag-container');
-const input = document.querySelector('.tag-container input');
+const input = document.querySelector('.container input');
+const buttonInput = document.querySelector('.container button');
 
-let tags = [];
-
-function createTag(label) {
-  const div = document.createElement('div');
-  div.setAttribute('class', 'tag');
-  const span = document.createElement('span');
-  span.innerHTML = label;
-  const closeIcon = document.createElement('i');
-  closeIcon.innerHTML = 'close';
-  closeIcon.setAttribute('class', 'material-icons');
-  closeIcon.setAttribute('data-item', label);
-  div.appendChild(span);
-  div.appendChild(closeIcon);
-  return div;
-}
-
-function clearTags() {
-  document.querySelectorAll('.tag').forEach(tag => {
-    tag.parentElement.removeChild(tag);
-  });
-}
-
-function addTags() {
-  clearTags();
-  tags.slice().reverse().forEach(tag => {
-    tagContainer.prepend(createTag(tag));
-  });
-}
+buttonInput.addEventListener('click', function(){
+  const tags = input.value.split(',');
+  UpdateGames(document.querySelectorAll('.game'), tags);
+})
 
 function GameContainsAllTags(game, tags){
-    let currentGameTags = game.childNodes[3].childNodes[3].innerText; 
+    let currentGameTags = game.childNodes[1].childNodes[1].innerText; 
     for (let j = 0; j < tags.length; j++){
-        console.log(tags[j]);
-        if (currentGameTags.indexOf("#" + tags[j]+ ' ') == -1){
+        if (currentGameTags.indexOf(tags[j]) == -1){
             return false;
         }
     }
@@ -45,7 +21,6 @@ function UpdateGames(games, tags)
 {    
      for (let i = 0; i < games.length; i++) {
         if (!GameContainsAllTags(games[i], tags)){
-            console.log(games[i]);
             if (!games[i].classList.contains('hidden')){
                 games[i].classList.remove('d-flex');
                 games[i].classList.add("hidden");
@@ -59,36 +34,9 @@ function UpdateGames(games, tags)
       }
 }
 
-input.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') {
-      e.target.value.split(',').forEach(tag => {
-        tags.push(tag);
-      });
-    addTags();
-    input.value = '';
-    let games = document.querySelectorAll('.game');
-    UpdateGames(games, tags);
-    } 
-});
-document.addEventListener('click', (e) => {
-  if (e.target.tagName === 'I') {
-    const tagLabel = e.target.getAttribute('data-item');
-    const index = tags.indexOf(tagLabel);
-    tags = [...tags.slice(0, index), ...tags.slice(index+1)];
-    addTags();    
-    let games = document.querySelectorAll('.game');
-    UpdateGames(games, tags);
-  }
-})
-
-input.focus();
-
 const hubConnection = new signalR.HubConnectionBuilder().
     withUrl('/games').
     build();
-
-hubConnection.on("SelfJoin", function(gameName, tags, gameId){
-});
 
 function MakeElements(tags){
   let tagsElements = new Map();
@@ -98,13 +46,19 @@ function MakeElements(tags){
   return tagsElements;
 }
 
+hubConnection.on('Init', function(games){
+  for (let i = 0; i < games.length; i++){
+    AddGame(games[i]['gameName'], games[i]['tags']);
+  }
+});
+
 function AddGame(gameName, tags){
   const gamesUl = document.querySelector('.games');
-  console.log('1');
-  let _tags = ["li","img","div", "p", "h3", "button"];
+  let _tags = ["li","img","div", "input", "h3", "button"];
   let elements = MakeElements(_tags);
-  elements.get("p").innerHTML = tags;
-  elements.get("p").classList.add("tags");
+  elements.get("input").value = tags;
+  elements.get("input").setAttribute("data-role", "taginput");
+  elements.get('input').setAttribute('readonly', 'readonly');
   elements.get('button').setAttribute("type","button");
   elements.get('button').classList.add("btn");
   elements.get('button').innerHTML = 'Join';
@@ -118,28 +72,22 @@ function AddGame(gameName, tags){
   elements.get('li').classList.add("col-md-4"); 
   elements.get('li').classList.add("game-" + gameName);
   elements.get('div').append(elements.get('h3'));
-  elements.get('div').append(elements.get('p'));
+  elements.get('div').append(elements.get('input'));
   elements.get('div').append(elements.get('button'));
   elements.get('li').append(elements.get('img'));
   elements.get('li').append(elements.get('div'));
-  console.log('99');
   gamesUl.append(elements.get('li'));
-  console.log('100');
   elements.get('button').addEventListener("click", function (e){
-    console.log(123);
     hubConnection.invoke("Join", gameName, tags);
-    console.log(124);
   });
-  console.log('101');
 }
 
 function MakeGameField(gameName, tags){  
   document.querySelector('.search').classList.add('hidden'); 
   document.querySelector('.play').classList.remove('hidden');
-  console.log("Work");
   let gameSection = document.querySelector('.play');
   let elem = document.createElement('h1');
-      elem.innerHTML = "Waiting your opponent";
+      elem.innerHTML = "Waiting for your opponent";
   gameSection.append(elem);
 }
 
@@ -148,27 +96,153 @@ hubConnection.on("OthersCreate", function(gameName, tags){
 });
 
 hubConnection.on("SelfCreate", function(gameName, stringTags){
-  MakeGameField(gameName, tags);
+  input.value = "";
+  document.querySelector("#inputGameName").value = "";
+  MakeGameField(gameName, stringTags);
+});
+
+function CreateTable(gameName){
+  const div = document.createElement('div');
+  const table = document.createElement('table');
+  for (let i = 0; i < 3; i++){
+    let tr = document.createElement('tr');
+    for (let j = 0; j < 3; j++){
+      let td = document.createElement('td');
+      td.addEventListener('click', function(){
+        if (this.innerHTML == 'X' || this.innerHTML == 'O'){
+
+        } else{
+          hubConnection.invoke('Move', gameName, PLAYER, i, j);
+        }
+      });
+      tr.append(td);
+    }
+    table.append(tr);
+  }
+  table.id = "myTable";
+  div.classList.add('d-flex');
+  div.classList.add('justify-content-center');
+  div.append(table);
+  document.querySelector('.play').append(div);
+};
+
+PLAYER = 'none';
+
+hubConnection.on('Back', function(gameName){
+  BackAndDelete(gameName);
 });
 
 hubConnection.on('InitXPlayer', function(gameName, tags){
-  console.log('chlen');
-  document.querySelector(".play > h1").innerHTML = "opponent was found";
+  PLAYER = 'X';
+  document.querySelector(".play > h1").innerHTML = "Opponent was found";
+  CreateTable(gameName);
+  const button = document.createElement("button");
+  button.classList.add("btn");
+  button.classList.add("btn-primary");
+  button.innerHTML = "Back";
+  const h2 = document.createElement('h2');
+  h2.innerHTML = "Your move!";
+  document.querySelector('.play').append(h2);
+  document.querySelector('.play').append(button);
+  button.addEventListener('click', function()
+  {
+    hubConnection.invoke("Back", gameName);
+  });
 });
 
 hubConnection.on('InitOPlayer', function(gameName, tags)
-{  
-  console.log("Oplayer");
+{ 
+  PLAYER = 'O'; 
   document.querySelector('.search').classList.add('hidden'); 
   document.querySelector('.play').classList.remove('hidden');
   let gameSection = document.querySelector('.play');
   let elem = document.createElement('h1');
       elem.innerHTML = "Opponent was found";
   gameSection.append(elem);
+  CreateTable(gameName);
+  const h2 = document.createElement('h2');
+  h2.innerHTML = "Wait for opponent move!";
+  document.querySelector('.play').append(h2);
+  const button = document.createElement("button");
+  button.classList.add("btn");
+  button.classList.add("btn-primary");
+  button.innerHTML = "Back";
+  document.querySelector('.play').append(button);
+  button.addEventListener('click', function()
+  {
+    hubConnection.invoke("Back", gameName);
+  });
 });
 
 hubConnection.on("UpdateOther", function (gameName, tags){
-  console.log("Other players!");
+  const li = document.querySelector('.game-' + gameName);
+  if (li){
+    li.remove();
+  }
+});
+const pos = [
+		[[0,0],[0,1],[0,2]], 
+		[[1,0],[1,1],[1,2]], 
+		[[2,0],[2,1],[2,2]], 
+		[[0,0],[1,0],[2,0]], 
+		[[0,1],[1,1],[2,1]], 
+		[[0,2],[1,2],[2,2]], 
+		[[0,0],[1,1],[2,2]], 
+		[[2,0],[1,1],[0,2]], 
+  ];
+
+function Check(table, player){
+  for (let i = 0; i < pos.length; i++){
+    var ok = true;
+    for (let j = 0; j < pos[i].length; j++){
+      if (table.rows[pos[i][j][0]].cells[pos[i][j][1]].innerHTML != player) ok = false;
+    }
+    if (ok) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function BackAndDelete(gameName){
+  document.querySelector('#inputGameName').value = "";
+  document.querySelector('#inputTags').value = "";
+  document.querySelector('.search').classList.remove('hidden'); 
+  document.querySelector('.play').classList.add('hidden');
+  document.querySelector('.play').innerHTML = "";
+  const li = document.querySelector('.game-' + gameName);
+  if (li != undefined){
+    li.remove();
+  }
+}
+
+hubConnection.on('GoBack', function(winner, gameName){
+  alert(winner + '- winner!');
+  BackAndDelete(gameName);
+});
+
+function CheckDraw(table){
+  let count = 0;
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++){
+      if (table.rows[i].cells[j].innerHTML) count++;
+    }
+  return count == 9;
+}
+
+hubConnection.on('Move', function(gameName, player, x, y){
+  const table = document.querySelector('table');
+  table.rows[x].cells[y].innerHTML = player;
+  document.querySelector('.play > h2').innerHTML = (player == PLAYER)?"Wait for opponent move!":"Make your move!";
+  let winX = Check(table, "X");
+  let winY = Check(table, "O");
+  let draw = CheckDraw(table);
+  if (winX) hubConnection.invoke('GoBack', "X", gameName); 
+  if (winY) hubConnection.invoke('GoBack', "O", gameName);
+  if (draw) hubConnection.invoke('GoBack', "XO", gameName) 
+});
+
+hubConnection.on('DeleteGame', function(gameName){
   const li = document.querySelector('.game-' + gameName);
   if (li != undefined){
     li.remove();
@@ -178,8 +252,9 @@ hubConnection.on("UpdateOther", function (gameName, tags){
 const createButton = document.querySelector('.create-game > button');
 createButton.addEventListener("click", function(){
   let gameName = document.querySelector('#inputGameName').value;
-  let stringTags = document.querySelector('#inputTags').value;
-  console.log(9);
-  hubConnection.invoke("Create", gameName, stringTags);
+  const tags = document.querySelector('#inputTags').value;
+  hubConnection.invoke("Create", gameName, tags);
 });
+
 hubConnection.start();
+hubConnection.invoke("Init");

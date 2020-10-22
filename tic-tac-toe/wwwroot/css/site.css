@@ -14,7 +14,8 @@ li {
     list-style-type: none;
 }
 .game img{
-    width: 30%;
+    width: 45%;
+    object-fit: contain;
 }
 .game div{
     margin-top: 10%;
@@ -26,59 +27,42 @@ li {
 .find-by-tag {
     margin-bottom: 20px;
 }
-@import url('https://kodhus.com/kodhus-ui/kodhus-0.1.0.min.css');
 
 .container {
     width: 40%;
     margin: 30px auto;
 }
+@media (max-width: 767px) {
+    .container {
+        width: 100%;
+    }
+    .games{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+}
 .container p
 {
     margin-left: 220px;
 }
-
-.tag-container {
-    border: 2px solid #ccc;
-    border-radius: 3px;
-    background: #fff;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    padding: 6px;
-    overflow-x: scroll;
-}
-
-.tag-container .tag {
-    height: 30px;
-    margin: 5px;
-    padding: 5px 6px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    background: #eee;
-    display: flex;
-    align-items: center;
-    color: #333;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.2), inset 0 1px 1px #fff;
-    cursor: default;
-}
-
-.tag i {
-    font-size: 16px;
-    color: #666;
-    margin-left: 5px;
-}
-
-.tag-container input {
-    padding: 5px;
-    font-size: 16px;
-    border: 0;
-    outline: none;
-    font-family: 'Rubik';
-    color: #333;
-    flex: 1;
-}
 .hidden{
     display:none;
 }
-.create-game div{
+td{
+    height: 50px;
+    width: 50px;
+    border: 1px solid white;
+    cursor: pointer;
+    vertical-align: middle;
+    text-align: center;
+}
+.play {
+    display : flex;
+    flex-direction: column;
+    align-items: center;
+}
+.play button {
+    margin-top: 100px;
+    width: 15%;
 }
